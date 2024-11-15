@@ -1,8 +1,9 @@
-from transformers import AutoTokenizer
-from datasets import load_dataset
-import torch
-import random
 import json
+import random
+
+import torch
+from datasets import load_dataset
+from transformers import AutoTokenizer
 
 
 def get_pile(nsamples, seed, seqlen, tokenizer_path):
@@ -175,9 +176,20 @@ def get_c4_new(nsamples, seed, seqlen, tokenizer_path):
 
 
 def get_custom_data(nsamples, seed, seqlen, tokenizer_path, data_path):
-    raise NotImplementedError(
-        "You should implentment the function to load your own dataset!"
-    )
+    print("get_custom_data")
+    traindata = load_dataset("json", data_files=data_path, split="train")
+
+    traindata = traindata.shuffle(seed=seed)
+    random.seed(seed)
+    trainloader = []
+    for i in range(nsamples):
+        inp = torch.LongTensor([traindata[i]["input_ids"]])
+        inp = inp[:, :seqlen]
+        tar = inp.clone()
+        # Don't quite understand why this label is necessary
+        tar[:, :-1] = -100
+        trainloader.append((inp, tar))
+    return trainloader, None
 
 
 def get_loaders(
